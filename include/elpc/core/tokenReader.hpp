@@ -19,10 +19,10 @@ template <typename TokenType> class TokenReader {
 public:
   TokenReader(const std::vector<Token<TokenType>> &t) : tokens(t) {}
 
-  const Token<TokenType> &peek() const {
-    if (isAtEnd())
+  const Token<TokenType> &peek(size_t offset = 0) const {
+    if (isAtEnd(offset))
       return tokens.back();
-    return tokens[pos];
+    return tokens[pos + offset];
   }
 
   const Token<TokenType> &previous() const {
@@ -52,6 +52,6 @@ public:
     }
   }
 
-  bool isAtEnd() const { return pos >= tokens.size(); }
+  bool isAtEnd(size_t offset = 0) const { return pos + offset >= tokens.size(); }
 };
 } // namespace elpc
