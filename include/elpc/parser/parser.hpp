@@ -16,7 +16,7 @@ private:
   TokenReader<TokenType> reader;
 
 protected:
-  const Token<TokenType> &peek() const { return reader.peek(); }
+  const Token<TokenType> &peek(size_t offset = 0) const { return reader.peek(offset); }
 
   const Token<TokenType> &consume() { return reader.consume(); }
 
