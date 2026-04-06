@@ -58,10 +58,15 @@
 
 namespace elpc {
 
+struct LLVMVar {
+  llvm::Value *ptr; // the alloca
+  llvm::Type *type; // i32 or i1
+};
+
 // Alias to avoid collision between elpc::IRBuilder and llvm::IRBuilder
 template <typename T> using LLVMIRBuilder = llvm::IRBuilder<T>;
 
-class LLVMBridge : public IRBuilder<llvm::Value *> {
+class LLVMBridge : public IRBuilder<LLVMVar> {
   llvm::LLVMContext &ctx;
   llvm::Module &mod;
   LLVMIRBuilder<llvm::ConstantFolder> builder;
@@ -84,7 +89,7 @@ class LLVMBridge : public IRBuilder<llvm::Value *> {
 
 public:
   LLVMBridge(llvm::LLVMContext &ctx, llvm::Module &mod, DiagnosticEngine &diag)
-      : IRBuilder<llvm::Value *>(diag), ctx(ctx), mod(mod), builder(ctx) {
+      : IRBuilder<LLVMVar>(diag), ctx(ctx), mod(mod), builder(ctx) {
     initializeTargets();
   }
 
@@ -158,19 +163,22 @@ public:
     return llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), value ? 1 : 0);
   }
 
- // ----------------------------------------------------------------
- // Boolean emitters
- // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // Boolean emitters
+  // ----------------------------------------------------------------
 
-  llvm::Value *emitAnd(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+  llvm::Value *emitAnd(llvm::Value *lhs, llvm::Value *rhs,
+                       const std::string &name = "") {
     return builder.CreateAnd(lhs, rhs, name);
   }
 
-  llvm::Value *emitOr(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+  llvm::Value *emitOr(llvm::Value *lhs, llvm::Value *rhs,
+                      const std::string &name = "") {
     return builder.CreateOr(lhs, rhs, name);
   }
 
-  llvm::Value *emitSRem(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+  llvm::Value *emitSRem(llvm::Value *lhs, llvm::Value *rhs,
+                        const std::string &name = "") {
     return builder.CreateSRem(lhs, rhs, name);
   }
 
@@ -260,12 +268,12 @@ public:
   }
 
   llvm::Value *emitICmpLTE(llvm::Value *lhs, llvm::Value *rhs,
-                          const std::string &name = "") {
+                           const std::string &name = "") {
     return builder.CreateICmpSLE(lhs, rhs, name);
   }
 
   llvm::Value *emitICmpGTE(llvm::Value *lhs, llvm::Value *rhs,
-                          const std::string &name = "") {
+                           const std::string &name = "") {
     return builder.CreateICmpSGE(lhs, rhs, name);
   }
 
