@@ -158,6 +158,22 @@ public:
     return llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), value ? 1 : 0);
   }
 
+ // ----------------------------------------------------------------
+ // Boolean emitters
+ // ----------------------------------------------------------------
+
+  llvm::Value *emitAnd(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+    return builder.CreateAnd(lhs, rhs, name);
+  }
+
+  llvm::Value *emitOr(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+    return builder.CreateOr(lhs, rhs, name);
+  }
+
+  llvm::Value *emitSRem(llvm::Value *lhs, llvm::Value *rhs, const std::string &name = "") {
+    return builder.CreateSRem(lhs, rhs, name);
+  }
+
   // ----------------------------------------------------------------
   // Integer arithmetic
   // ----------------------------------------------------------------
