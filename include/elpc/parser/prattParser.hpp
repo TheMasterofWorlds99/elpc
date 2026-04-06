@@ -43,13 +43,15 @@ namespace elpc {
 
 enum class Precedence : int {
   NONE = 0,
-  ASSIGNMENT = 1, // =
-  EQUALITY = 2,   // == !=
-  COMPARISON = 3, // < > <= >=
-  TERM = 4,       // + -
-  FACTOR = 5,     // * /
-  UNARY = 6,      // - !
-  PRIMARY = 7     // literals, grouping
+  ASSIGNMENT = 1,
+  LOGICAL_OR = 2,   // ||
+  LOGICAL_AND = 3,  // &&
+  EQUALITY = 4,     // == !=
+  COMPARISON = 5,   // < > <= >=
+  TERM = 6,         // + -
+  FACTOR = 7,       // * / %
+  UNARY = 8,        // - !
+  PRIMARY = 9       // literals, grouping, calls
 };
 
 inline int precedenceOf(Precedence p) { return static_cast<int>(p); }
