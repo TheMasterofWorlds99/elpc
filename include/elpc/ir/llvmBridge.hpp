@@ -243,6 +243,16 @@ public:
     return builder.CreateICmpSGT(lhs, rhs, name);
   }
 
+  llvm::Value *emitICmpLTE(llvm::Value *lhs, llvm::Value *rhs,
+                          const std::string &name = "") {
+    return builder.CreateICmpSLE(lhs, rhs, name);
+  }
+
+  llvm::Value *emitICmpGTE(llvm::Value *lhs, llvm::Value *rhs,
+                          const std::string &name = "") {
+    return builder.CreateICmpSGE(lhs, rhs, name);
+  }
+
   // ----------------------------------------------------------------
   // Memory
   // ----------------------------------------------------------------
