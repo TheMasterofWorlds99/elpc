@@ -58,7 +58,6 @@ public:
   llvm::Module      &getModule()  { return mod; }
   LLVMIRBuilder<llvm::ConstantFolder> &getBuilder() { return builder; }
   llvm::Function    *getCurrentFunction() { return currentFn; }
-  auto &b() { return bridge.getBuilder(); }
 
   // --- Function lifecycle ---
   llvm::Function *beginFunction(
