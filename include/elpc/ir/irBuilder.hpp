@@ -56,12 +56,8 @@ public:
     return true;
   }
 
-  std::optional<ValueType> lookupVar(const std::string &name,
-                                     SourceLocation loc = {}) {
-    auto val = symbols.lookup(name);
-    if (!val.has_value())
-      diag.error("Undefined variable '" + name + "'", loc);
-    return val;
+  std::optional<ValueType> lookupVar(const std::string &name) {
+    return symbols.lookup(name);
   }
 
   void error(const std::string &msg, SourceLocation loc = {}) {
