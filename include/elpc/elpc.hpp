@@ -9,13 +9,14 @@
 
 // Core
 #include <elpc/core/loc.hpp>
+#include <elpc/core/sourceManager.hpp>
 #include <elpc/core/table.hpp>
+#include <elpc/core/internedString.hpp>
 #include <elpc/core/token.hpp>
 #include <elpc/core/tokenReader.hpp>
 
 // Lexer
 #include <elpc/lexer/lexer.hpp>
-#include <elpc/lexer/rule.hpp>
 
 // Parser
 #include <elpc/parser/parser.hpp>
@@ -25,5 +26,13 @@
 #include <elpc/diagnostics/diagnostic.hpp>
 #include <elpc/diagnostics/diagnosticEngine.hpp>
 
+// Sema
+#include <elpc/sema/type.hpp>
+
+// AST
+#include <elpc/ast/ast.hpp>
+#include <elpc/ast/transform/constantFold.hpp>
+
 // IR
+#include <elpc/ir/ir.hpp>
 #include <elpc/ir/irBuilder.hpp>

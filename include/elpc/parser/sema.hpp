@@ -42,12 +42,12 @@ protected:
     diag.note(message, loc);
   }
 
-  bool hasErrors() const { return diag.hasErrors(); }
-
-  DiagnosticEngine &engine() { return diag; }
-
 public:
   explicit Sema(DiagnosticEngine &diag) : diag(diag) {}
+
+  [[nodiscard]] bool hasErrors() const { return diag.hasErrors(); }
+
+  DiagnosticEngine &engine() { return diag; }
 
   Sema(const Sema &) = delete;
   Sema &operator=(const Sema &) = delete;

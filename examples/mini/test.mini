@@ -1,0 +1,6 @@
+// Mini test program: print numbers from 1 to 10
+let x: int = 1;
+while (x <= 10) {
+    print x;
+    x = x + 1;
+}

@@ -1,69 +1,102 @@
 /*
    LEXER.HPP
-   This file contains the building blocks for creating a lexer based on the
-   token logic in TOKEN.HPP
+   DFA-based lexer that tokenises source text owned by a SourceManager.
+   Tokens hold string_views into the SourceManager's buffer — no per-token
+   allocations.
+
+   Error handling:
+     - By default, unrecognized characters throw std::runtime_error.
+     - Call setDiagnostics(engine) to use a DiagnosticEngine instead.
+       In diagnostic mode, errors are reported and the bad character is
+       skipped, allowing the lexer to continue and find more errors.
 */
 
 #pragma once
 
-#include <cstdint>
+#include <elpc/core/sourceManager.hpp>
 #include <elpc/core/token.hpp>
-#include <elpc/lexer/rule.hpp>
+#include <elpc/diagnostics/diagnosticEngine.hpp>
+#include <elpc/lexer/dfa.hpp>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace elpc {
 
 template <typename TokenType> struct Lexer {
-  std::string input;
-  std::vector<Rule<TokenType>> rules; // Grows as the user puts in more rules
-  size_t pos = 0;                     // Position in the lexing process
-  size_t line = 1;                    // Line number in the lexing process
-  size_t column = 1;                  // Column number in the lexing process
+  const SourceManager *source = nullptr;
+  size_t pos = 0;
+  size_t line = 1;
+  size_t column = 1;
 
   Lexer() = default;
-  Lexer(std::string_view src) : input(src) {}
+  explicit Lexer(const SourceManager &src) : source(&src) {}
+
+  /// Attach a DiagnosticEngine for structured error reporting.
+  /// When set, the lexer reports errors via the engine instead of throwing.
+  void setDiagnostics(DiagnosticEngine &diag) {
+    diagnostics = &diag;
+  }
+
+  /// Remove the diagnostic engine — reverts to throwing on error.
+  void clearDiagnostics() {
+    diagnostics = nullptr;
+  }
 
   // Main functions
   std::vector<Token<TokenType>> tokenize() {
-    // Ensure the position is reset for multiple tokensises
     reset();
+    if (!source)
+      return {};
+
+    // Build NFA from current rules
+    std::vector<std::pair<std::string_view, int>> rulePatterns;
+    for (auto &r : storedRules)
+      rulePatterns.emplace_back(r.pattern, static_cast<int>(rulePatterns.size()));
+    detail::NFA nfa;
+    nfa.compile(rulePatterns);
+
     std::vector<Token<TokenType>> tokens;
+    auto text = source->text();
 
-    while (pos < input.size()) {
-      size_t bestLength = 0;
-      size_t bestIndex = SIZE_MAX;
+    while (pos < text.size()) {
+      auto remaining = text.substr(pos);
+      int ruleIndex = -1;
+      size_t matchLen = 0;
+      nfa.run(remaining, matchLen, ruleIndex);
 
-      auto begin = input.cbegin() + pos;
-      auto end = input.cend();
+      if (ruleIndex == -1 || matchLen == 0) {
+        size_t errLine = line;
+        size_t errCol = column;
 
-      for (size_t i = 0; i < rules.size(); ++i) {
-        std::match_results<std::string::const_iterator> match;
-
-        if (std::regex_search(begin, end, match, rules[i].pattern,
-                              std::regex_constants::match_continuous)) {
-          size_t len = match.length();
-          if (len == 0)
-            continue;
-          if (len > bestLength) {
-            bestLength = len;
-            bestIndex = i;
-          }
+        // Skip one character for error recovery
+        if (text[pos] == '\n') {
+          line++;
+          column = 1;
+        } else {
+          column++;
         }
-      }
+        pos++;
 
-      if (bestIndex == SIZE_MAX) {
+        if (diagnostics) {
+          diagnostics->error(
+              "Unexpected character '" + std::string(1, text[pos - 1]) + "'",
+              {errLine, errCol, source->filename()});
+          continue; // keep going — find more errors
+        }
+
         throw std::runtime_error("[elpc] Lexer error at line " +
-                                 std::to_string(line) + ", column " +
-                                 std::to_string(column));
+                                 std::to_string(errLine) + ", column " +
+                                 std::to_string(errCol));
       }
 
-      const auto &bestRule = rules[bestIndex];
-      std::string_view lexeme(input.data() + pos, bestLength);
+      const auto &bestRule = storedRules[ruleIndex];
+      size_t startPos = pos;
 
-      SourceLocation loc{line, column};
-
-      for (size_t i = 0; i < bestLength; ++i) {
-        if (input[pos] == '\n') {
+      // Advance position tracking
+      for (size_t i = 0; i < matchLen; ++i) {
+        if (text[pos] == '\n') {
           line++;
           column = 1;
         } else {
@@ -72,10 +105,12 @@ template <typename TokenType> struct Lexer {
         pos++;
       }
 
-      if (bestRule.isSkip())
+      if (bestRule.isSkip)
         continue;
 
-      tokens.emplace_back(*bestRule.type, std::string(lexeme), loc);
+      tokens.emplace_back(*bestRule.type,
+                          source->slice(startPos, matchLen),
+                          SourceLocation{line, column});
     }
 
     return tokens;
@@ -83,27 +118,41 @@ template <typename TokenType> struct Lexer {
 
   // Helper Functions
   void addRule(TokenType type, std::string pattern) {
-    rules.emplace_back(type, std::regex(pattern));
+    storedRules.push_back({type, std::move(pattern), false});
   }
-  void addSkip(std::string pattern) { rules.emplace_back(std::regex(pattern)); }
 
-  void setInput(std::string_view src) {
-    input = src;
+  void addSkip(std::string pattern) {
+    storedRules.push_back({std::nullopt, std::move(pattern), true});
+  }
+
+  void setSource(const SourceManager &src) {
+    source = &src;
     reset();
   }
 
-  void reserveRules(size_t n) { rules.reserve(n); }
+  void reserveRules(size_t n) { storedRules.reserve(n); }
 
   std::string_view remaining() const {
-    return std::string_view(input).substr(pos);
+    if (!source)
+      return {};
+    return source->text().substr(pos);
   }
 
   void reset() {
-    // Reset the lexer for either re-use or due to an error
     pos = 0;
     line = 1;
     column = 1;
   }
+
+private:
+  struct StoredRule {
+    std::optional<TokenType> type;
+    std::string pattern;
+    bool isSkip = false;
+  };
+
+  std::vector<StoredRule> storedRules;
+  DiagnosticEngine *diagnostics = nullptr;
 };
 
 } // namespace elpc

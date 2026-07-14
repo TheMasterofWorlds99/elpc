@@ -15,6 +15,7 @@ target_include_directories(elpc
 )
 
 target_compile_features(elpc INTERFACE cxx_std_20)
+target_compile_definitions(elpc INTERFACE ELPC_VERSION="${PROJECT_VERSION}")
 
 # ----------------------------------------------------------------
 # Optional LLVM backend
@@ -88,7 +89,27 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_elpc_test(TestSymbolTable)
   add_elpc_test(TestSema)
   add_elpc_test(TestIR)
+  add_elpc_test(TestIR2)
   add_elpc_test(TestPratt)
+  add_elpc_test(TestAST)
+  add_elpc_test(TestInternedString)
+  add_elpc_test(TestTypeSystem)
+  add_elpc_test(TestFullPipeline)
+
+  # ----------------------------------------------------------------
+  # Mini example
+  # ----------------------------------------------------------------
+  add_executable(mini examples/mini/mini.cpp)
+  target_link_libraries(mini PRIVATE elpc)
+
+  add_executable(repl examples/repl/repl.cpp)
+  target_link_libraries(repl PRIVATE elpc)
+
+  add_executable(mini_ir examples/mini_ir/mini_ir.cpp)
+  target_link_libraries(mini_ir PRIVATE elpc)
+
+  add_executable(elpc-cli tools/elpc/elpc.cpp)
+  target_link_libraries(elpc-cli PRIVATE elpc)
 
   if(ELPC_ENABLE_LLVM)
     add_elpc_test(TestLLVM)

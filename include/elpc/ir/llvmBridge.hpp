@@ -1,6 +1,5 @@
-#pragma once
-
 #ifdef ELPC_ENABLE_LLVM
+#pragma once
 
 #include <elpc/ir/irBuilder.hpp>
 #include <llvm/IR/BasicBlock.h>
@@ -133,4 +132,7 @@ public:
 
 } // namespace elpc
 
+#else
+#pragma once
+#error "llvmBridge.hpp requires ELPC_ENABLE_LLVM. Rebuild with -DELPC_ENABLE_LLVM=ON"
 #endif

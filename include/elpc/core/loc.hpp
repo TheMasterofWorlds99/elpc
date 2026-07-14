@@ -17,6 +17,11 @@ struct SourceLocation {
   size_t line = 1;
   size_t column = 1;
   std::string_view filename;
+
+  constexpr SourceLocation() = default;
+
+  constexpr SourceLocation(size_t line, size_t column, std::string_view filename = {})
+      : line(line), column(column), filename(filename) {}
 };
 
 } // namespace elpc

@@ -1,15 +1,14 @@
 /*
    TOKEN.HPP
-   This file holds all the logic for tokens, which are the variables and
-   keywords of your language. A token is comprised of a TokenType and
-   std::string value. This will allow the user to define there own enum class
-   without worrying about setting up structs and having to worry about specific
-   tokens and edge cases
+   Tokens are lightweight views into source text — the lexeme is a
+   string_view pointing to memory owned by a SourceManager that outlives
+   the token.
 */
 
 #pragma once
 
 #include <charconv>
+#include <cstdlib>
 #include <elpc/core/loc.hpp>
 #include <iostream>
 #include <optional>
@@ -21,59 +20,66 @@ namespace elpc {
 template <typename TokenType> struct Token {
   TokenType type; // A Token has a type, that the user makes via, for example an
                   // enum class
-  std::string lexeme; // This is the "value" that could hold what the user wants
-                      // (A numerical value for an intger literal or a variable)
+  std::string_view lexeme; // View into SourceManager-owned memory — zero-copy
   SourceLocation
       location; // This is the location of the token in the file or src code.
                 // Helps with debugging so you know where to look
 
-  Token() = default;
+  constexpr Token() = default;
 
-  Token(TokenType type, std::string_view lexeme, SourceLocation loc = {})
+  constexpr Token(TokenType type, std::string_view lexeme, SourceLocation loc = {})
       : type(type), lexeme(lexeme), location(loc) {}
 
   // Helper Functions
-  bool is(TokenType t) const { return type == t; }
-  bool isNot(TokenType t) const { return type != t; }
+  [[nodiscard]] constexpr bool is(TokenType t) const { return type == t; }
+  [[nodiscard]] constexpr bool isNot(TokenType t) const { return type != t; }
 
-  template <typename... Args> bool isOneOf(Args... types) const {
+  template <typename... Args> [[nodiscard]] constexpr bool isOneOf(Args... types) const {
     return ((type == types) || ...);
   }
 
   // Converters
-  std::optional<int> toInt() const {
+  [[nodiscard]] std::optional<int> toInt() const {
     int value;
-    // from_chars takes a start and end pointer—perfect for string_view
     auto [ptr, ec] =
         std::from_chars(lexeme.data(), lexeme.data() + lexeme.size(), value);
 
     if (ec == std::errc()) {
       return value;
     }
-    // If we made it here, print an error
-    std::cerr << "Error! Failed to convert lexeme to int!\n";
     return std::nullopt;
   }
-  std::optional<float> toFloat() const {
+  [[nodiscard]] std::optional<float> toFloat() const {
     float value;
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 202306
     auto [ptr, ec] =
         std::from_chars(lexeme.data(), lexeme.data() + lexeme.size(), value);
-
-    if (ec == std::errc()) {
+    if (ec == std::errc())
       return value;
-    }
-    std::cerr << "Error! Failed to convert lexeme to float!\n";
+#else
+    // strtof requires null-termination — copy to temporary on fallback path
+    std::string tmp(lexeme);
+    char *end = nullptr;
+    value = std::strtof(tmp.c_str(), &end);
+    if (end != tmp.c_str() && *end == '\0')
+      return value;
+#endif
     return std::nullopt;
   }
-  std::optional<double> toDouble() const {
+  [[nodiscard]] std::optional<double> toDouble() const {
     double value;
+#if defined(__cpp_lib_to_chars) && __cpp_lib_to_chars >= 202306
     auto [ptr, ec] =
         std::from_chars(lexeme.data(), lexeme.data() + lexeme.size(), value);
-
-    if (ec == std::errc()) {
+    if (ec == std::errc())
       return value;
-    }
-    std::cerr << "Error! Failed to convert lexeme to double!\n";
+#else
+    std::string tmp(lexeme);
+    char *end = nullptr;
+    value = std::strtod(tmp.c_str(), &end);
+    if (end != tmp.c_str() && *end == '\0')
+      return value;
+#endif
     return std::nullopt;
   }
   // Bool can be done later
@@ -81,12 +87,12 @@ template <typename TokenType> struct Token {
 
 // Utility functions
 template <typename TokenType>
-bool operator==(const Token<TokenType> &a, const Token<TokenType> &b) {
+constexpr bool operator==(const Token<TokenType> &a, const Token<TokenType> &b) {
   return a.type == b.type && a.lexeme == b.lexeme;
 }
 
 template <typename TokenType>
-bool operator!=(const Token<TokenType> &a, const Token<TokenType> &b) {
+constexpr bool operator!=(const Token<TokenType> &a, const Token<TokenType> &b) {
   return !(a == b);
 }
 

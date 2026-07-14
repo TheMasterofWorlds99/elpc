@@ -30,11 +30,11 @@ public:
     scopes.pop_back();
   }
 
-  size_t depth() const { return scopes.size(); }
+  [[nodiscard]] size_t depth() const { return scopes.size(); }
 
   // Define a symbol is the current scope.
   // Returns false if the key is already defined in the current scope
-  bool define(const KeyType &key, ValueType value) {
+  [[nodiscard]] bool define(const KeyType &key, ValueType value) {
     auto &current = scopes.back();
     if (current.count(key)) {
       return false;
@@ -47,7 +47,7 @@ public:
     scopes.back()[key] = std::move(value);
   }
 
-  std::optional<ValueType> lookup(const KeyType &key) const {
+  [[nodiscard]] std::optional<ValueType> lookup(const KeyType &key) const {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
       auto found = it->find(key);
       if (found != it->end())
@@ -56,7 +56,7 @@ public:
     return std::nullopt;
   }
 
-  std::optional<ValueType> lookupCurrent(const KeyType &key) const {
+  [[nodiscard]] std::optional<ValueType> lookupCurrent(const KeyType &key) const {
     const auto &current = scopes.back();
     auto found = current.find(key);
     if (found != current.end())
@@ -64,9 +64,9 @@ public:
     return std::nullopt;
   }
 
-  bool isDefined(const KeyType &key) const { return lookup(key).has_value(); }
+  [[nodiscard]] bool isDefined(const KeyType &key) const { return lookup(key).has_value(); }
 
-  bool isDefinedCurrent(const KeyType &key) const {
+  [[nodiscard]] bool isDefinedCurrent(const KeyType &key) const {
     return lookupCurrent(key).has_value();
   }
 

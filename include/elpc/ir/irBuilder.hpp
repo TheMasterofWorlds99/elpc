@@ -47,7 +47,7 @@ public:
   void pushScope() { symbols.pushScope(); }
   void popScope() { symbols.popScope(); }
 
-  bool defineVar(const std::string &name, ValueType value,
+  [[nodiscard]] bool defineVar(const std::string &name, ValueType value,
                  SourceLocation loc = {}) {
     if (!symbols.define(name, std::move(value))) {
       diag.error("Redefinition of variable '" + name + "'", loc);
@@ -56,7 +56,7 @@ public:
     return true;
   }
 
-  std::optional<ValueType> lookupVar(const std::string &name) {
+  [[nodiscard]] std::optional<ValueType> lookupVar(const std::string &name) {
     return symbols.lookup(name);
   }
 
@@ -70,13 +70,13 @@ public:
     diag.note(msg, loc);
   }
 
-  bool hasErrors() const { return diag.hasErrors(); }
+  [[nodiscard]] bool hasErrors() const { return diag.hasErrors(); }
 
   DiagnosticEngine &engine() { return diag; }
 
   std::ostringstream &out() { return buffer; }
 
-  std::string result() const { return buffer.str(); }
+  [[nodiscard]] std::string result() const { return buffer.str(); }
 
   void clearBuffer() {
     buffer.str("");

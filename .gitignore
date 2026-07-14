@@ -18,12 +18,26 @@ Makefile
 *.ll
 *.bc
 
+# Compiled test and example binaries (outside build/)
+/mini
+/mini_ir
+/repl
+/elpc-cli
+/test-*
+
 # Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
+# Agent config
+.agent/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Temp files
+*.tmp
+/tmp/
