@@ -216,3 +216,6 @@ docs/         → module docs, multi-file guide, hydrolox plan
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Author Notes
+Hey! This is my first proper, usable C++ library that I made with the help of Claude, Gemini and Deepseek.
